@@ -6,11 +6,13 @@ This repo contains a simple script for quickly generating Dash compatible docset
 
 - python3
 - the requests library: `pip3 install requests`
-- [rsdocs-dashing](https://github.com/hobofan/rsdocs-dashing): `cargo install rsdocs-dashing`
 - [dashing](https://github.com/technosophos/dashing): `brew install dashing`
+- [rsdocs-dashing](https://github.com/hobofan/rsdocs-dashing): `cargo install rsdocs-dashing`
 
 ## Usage
 
 `./gen_docsets.py serde crossbeam rand log regex`
 
-This will clone the repos for these crates, generate the docsets, and copy them into the `docsets` subdir.
+This will clone the repos for these crates (assuming the name passed is used on [crates.io](https://crates.io),
+generate the docsets, and copy them into the `docsets` subdir. These `.docset` files can be added to Dash in
+dash's preferences.
