@@ -31,7 +31,7 @@ def get_repo_url(crate_name):
     headers = {'user-agent': '@cmyr\'s dash docset generation, colin@cmyr.net'}
     resp = requests.get(crates_path, headers=headers)
     if resp.status_code != 200:
-        raise "crates.io returned %d for %s" % (resp.status_code, crate_name)
+        raise Exception("crates.io returned %d for %s" % (resp.status_code, crate_name))
     json = resp.json()
     return json["crate"]["repository"]
 
@@ -46,27 +46,20 @@ def update_docs(crate_dir, crate_name):
     try:
         subprocess.check_call("git diff-index --quiet HEAD --", shell=True)
     except subprocess.CalledProcessError:
-        raise "crate {} has dirty working directory, will not update".format(crate_dir)
+        raise Exception("crate {} has dirty working directory, will not update".format(crate_dir))
 
-    # head_sha = resolve_rev("HEAD")
     subprocess.check_call("git fetch && git checkout origin/master", stdout=sys.stdout, shell=True)
     print("updated {} to origin/master".format(crate_name))
-    # master_sha = resolve_rev("origin/master")
-    # if head_sha == master_sha and os.path.exists(os.path.join(crate_dir, "target", "doc")):
-    #     raise Exception("crate {} unchanged, will not update".format(crate_name))
 
     subprocess.check_call("cargo doc", shell=True, stdout=sys.stdout)
+
+    if os.path.exists("docset"):
+        shutil.rmtree("docset")
+
     subprocess.check_call("rsdocs-dashing target/doc/{} docset".format(crate_name), stdout=sys.stdout, shell=True)
     subprocess.check_call("dashing build --config docset/dashing.json --source docset/build".format(crate_name), stdout=sys.stdout, shell=True)
     docset_path = os.path.join(os.getcwd(), "{}.docset".format(crate_name))
     return docset_path
-
-
-def resolve_rev(rev_id):
-    """Given an arbitrary git revision id, returns the commit's hash"""
-    output = subprocess.check_output("git rev-parse {}".format(rev_id), shell=True)
-    return output.decode('utf-8').strip()
-
 
 def main():
     parser = argparse.ArgumentParser(description='create or update a dash docset')
@@ -93,6 +86,8 @@ def main():
             docset_path = gen_docset(crate)
             dest_path = os.path.join(out_dir, os.path.split(docset_path)[-1])
             assert dest_path.endswith(".docset")
+            if os.path.exists(dest_path):
+                shutil.rmtree(dest_path)
             shutil.move(docset_path, dest_path)
             print("updated", dest_path)
         except Exception as e:
