@@ -35,12 +35,12 @@ def get_repo_url(crate_name):
     json = resp.json()
     return json["crate"]["repository"]
 
-    
+
 def clone_repo(repo_path):
     subprocess.check_call("git clone {}".format(repo_path), shell=True)
     print("cloned {}".format(repo_path))
 
-    
+
 def update_docs(crate_dir, crate_name):
     os.chdir(crate_dir)
     try:
@@ -68,17 +68,18 @@ def main():
         type=str,
         nargs='+',
         help='a list of crate names to generate or update docs for')
-    
+
     args = parser.parse_args()
     base_dir = os.getcwd()
     out_dir = os.path.join(base_dir, DOCSET_SUBDIR)
     source_dir = os.path.join(base_dir, SOURCE_SUBDIR)
-    
+
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     if not os.path.exists(source_dir):
         os.makedirs(source_dir)
-    
+
+    results = []
     for crate in args.crate_names:
         os.chdir(source_dir)
         print("generating docs for", crate)
@@ -89,9 +90,15 @@ def main():
             if os.path.exists(dest_path):
                 shutil.rmtree(dest_path)
             shutil.move(docset_path, dest_path)
-            print("updated", dest_path)
+            results.append((True, crate, dest_path))
         except Exception as e:
-            print(e)
+            results.append((False, crate, e))
+
+    for result in results:
+        if result[0]:
+            print("updated {}: {}".format(result[1], result[2]))
+        else:
+            print('error with crate "{}": "{}"'.format(result[1], result[2]))
 
 
 if __name__ == '__main__':
